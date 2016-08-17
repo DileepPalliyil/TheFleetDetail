@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Records</string>
+    <string name="action_settings">Settings</string>
+    <string name="flower_name_placeholder">Fleet Name</string>
+    <string name="fleet_name_placeholder">Fleet Name</string>
+    <string name="permissions_not_granted_read_phone_state">Permission to read sim is not granted.</string>
+    <string name="make_name_placeholder">Make</string>
+    <string name="model_name_placeholder">Model</string>
+    <string name="regno_filter">Enter Registration No</string>
+    <string name="srch">Search..</string>
+    <string name="dim">Dimension</string>
+    <string name="sample_pdf_url">http://partners.adobe.com/public/developer/en/xml/AdobeXMLFormsSamples.pdf</string>
+    <string name="downloaded_wait">Download Complete. Now opening PDF, Wait a moment please...</string>
+</resources>

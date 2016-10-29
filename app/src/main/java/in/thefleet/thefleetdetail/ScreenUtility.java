@@ -11,7 +11,7 @@ public class ScreenUtility {
     private float dpHeight;
 
     public ScreenUtility (Activity activity) {
-this.activity = activity;
+    this.activity = activity;
         Display display = activity.getWindowManager().getDefaultDisplay();
         DisplayMetrics  outMetrics = new DisplayMetrics();
         display.getMetrics(outMetrics);

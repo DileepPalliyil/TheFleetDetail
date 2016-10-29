@@ -9,6 +9,43 @@ public class Record {
     private int Filling_Closing_KM;
     private String Service_Date;
     private String RouteFrom;
+    private String Ins_Company;
+    private double Ins_Premium;
+    private double Sum_Insured;
+    private String Ins_Policy;
+
+    public String getIns_Company() {
+        return Ins_Company;
+    }
+
+    public void setIns_Company(String ins_Company) {
+        Ins_Company = ins_Company;
+    }
+
+    public double getIns_Premium() {
+        return Ins_Premium;
+    }
+
+    public void setIns_Premium(double ins_Premium) {
+        Ins_Premium = ins_Premium;
+    }
+
+    public double getSum_Insured() {
+        return Sum_Insured;
+    }
+
+    public void setSum_Insured(double sum_Insured) {
+        Sum_Insured = sum_Insured;
+    }
+
+    public String getIns_Policy() {
+        return Ins_Policy;
+    }
+
+    public void setIns_Policy(String ins_Policy) {
+        Ins_Policy = ins_Policy;
+    }
+
 
     public String getInsh_End_Date() {
         return Insh_End_Date;

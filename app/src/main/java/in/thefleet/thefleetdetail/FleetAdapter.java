@@ -5,7 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
-import android.util.LruCache;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +26,7 @@ public class FleetAdapter  extends ArrayAdapter<Fleet>  {
 
     private Context context;
     private List<Fleet> fleetList;
-    protected LruCache<Integer,Bitmap> imageCache;
+   // protected LruCache<Integer,Bitmap> imageCache;
 
 
     AsyncTask<FleetAndView,Void,FleetAndView> iTask = null;
@@ -36,11 +36,9 @@ public class FleetAdapter  extends ArrayAdapter<Fleet>  {
         this.context = context;
         this.fleetList = objects;
 
-        final int maxMemory = (int) (Runtime.getRuntime().maxMemory()/1024);
-        final int cacheSize = maxMemory/8;
-        imageCache = new LruCache<>(cacheSize);
-
-
+        //final int maxMemory = (int) (Runtime.getRuntime().maxMemory()/1024);
+        //final int cacheSize = maxMemory/8;
+        //imageCache = new LruCache<>(cacheSize);
     }
 
     @Override
@@ -61,14 +59,15 @@ public class FleetAdapter  extends ArrayAdapter<Fleet>  {
 
         //Display fleet photo in ImageView widget
         ImageView image = (ImageView) view.findViewById(R.id.imageView1);
-        Bitmap bitmap = imageCache.get(fleet.getFleetID());
-        if (bitmap != null){
+        //Bitmap bitmap = imageCache.get(fleet.getFleetID());
+        /*if (bitmap != null){
             image.setImageBitmap(fleet.getBitmap());
-        }else {
+        }else {*/
             FleetAndView container = new FleetAndView();
             container.fleet = fleet;
             container.view =view;
          if (isOnline.isConnectedFast(getContext())){
+             Log.d("FleetAdapter",MainActivity.PHOTOS_BASE_URL + fleet.getGroupName()+"/" +fleet.getPhoto());
              Picasso.with(getContext())
                      .load(MainActivity.PHOTOS_BASE_URL + fleet.getGroupName()+"/" +fleet.getPhoto())
                      .placeholder(R.drawable.ic_reload_white_48dp)
@@ -78,7 +77,7 @@ public class FleetAdapter  extends ArrayAdapter<Fleet>  {
          }else {
              Toast.makeText(getContext(), "Slow connection! Images will not be loaded.", Toast.LENGTH_LONG).show();
          }
-        }
+        //}
         return view;
     }
 
@@ -88,46 +87,4 @@ public class FleetAdapter  extends ArrayAdapter<Fleet>  {
         public Bitmap bitmap;
     }
 
-
-    /*private class ImageLoader extends AsyncTask<FleetAndView,Void,FleetAndView> {
-
-        @Override
-        protected FleetAndView doInBackground(FleetAndView... params) {
-            FleetAndView container = params[0];
-            Fleet fleet = container.fleet;
-
-            try {
-                String imageUrl = MainActivity.PHOTOS_BASE_URL + fleet.getGroupName()+"/" +fleet.getPhoto();
-                Request request = new Request.Builder()
-                        .url(imageUrl)
-                        .build();
-
-                Response response = client.newCall(request).execute();
-                InputStream in = response.body().byteStream();
-
-                //InputStream in = (InputStream) new URL(imageUrl).getContent();
-
-                Bitmap bitmap = BitmapFactory.decodeStream(in);
-                fleet.setBitmap(bitmap);
-                in.close();
-                container.bitmap = bitmap;
-                return container;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(FleetAndView result) {
-            if (result != null) {
-                ImageView image = (ImageView) result.view.findViewById(R.id.imageView1);
-                image.setImageBitmap(result.bitmap);
-                //  result.flower.setBitmap(result.bitmap);
-                if(result.bitmap != null) {
-                    imageCache.put(result.fleet.getFleetID(), result.bitmap);
-                }
-            }
-        }
-    }*/
 }

@@ -1,5 +1,6 @@
 package in.thefleet.thefleetdetail;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -29,7 +30,7 @@ public class RecordView extends AppCompatActivity implements DownloadFile.Listen
     private String glgroup;
 
     private String req;
-
+    ProgressDialog prDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,16 +97,37 @@ public class RecordView extends AppCompatActivity implements DownloadFile.Listen
         adapter = new PDFPagerAdapter(this, FileUtil.extractFileNameFromURL(url));
         remotePDFViewPager.setAdapter(adapter);
         updateLayout();
+        if (prDialog != null) {
+            prDialog.dismiss();
+        }
     }
 
     @Override
     public void onFailure(Exception e) {
+        if (prDialog != null) {
+            prDialog.dismiss();
+        }
         e.printStackTrace();
     }
 
     @Override
     public void onProgressUpdate(int progress, int total) {
-        pb.setVisibility(View.VISIBLE);
+
+        prDialog = new ProgressDialog(RecordView.this);
+        prDialog.setMessage("Please wait ...");
+        prDialog.show();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        this.finish();
     }
 }
 

@@ -11,4 +11,22 @@
     <string name="dim">Dimension</string>
     <string name="sample_pdf_url">http://partners.adobe.com/public/developer/en/xml/AdobeXMLFormsSamples.pdf</string>
     <string name="downloaded_wait">Download Complete. Now opening PDF, Wait a moment please...</string>
+    <string name="title_activity_filling">FillingActivity</string>
+    <string name="station_name_placeholder">ServiceStation:</string>
+    <string name="okm_placeholder">OKM:</string>
+    <string name="ckm_placeholder">CKM:</string>
+    <string name="qty_placeholder">Qty:</string>
+    <string name="fdate_placeholder">FilledOn:</string>
+    <string name="mileage_placeholder">Mileage:</string>
+    <string name="filleduser_placeholder">User:</string>
+    <string name="title_activity_service">ServiceActivity</string>
+    <string name="sdate_placeholder">ServiceDate:</string>
+    <string name="skm_placeholder">Reading(KM):</string>
+    <string name="sprice_placeholder">Rs.</string>
+    <string name="sdesc_placeholder">ServiceItem</string>
+    <string name="error_network_timeout">Network time ut error</string>
+    <string name="pleaseWait">Please wait</string>
+    <string name="webpage_being_loaded">Loading in progress</string>
+    <string name="record_icon">Record list icon</string>
+    <string name="record_header">Record header</string>
 </resources>

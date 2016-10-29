@@ -1,6 +1,7 @@
 package in.thefleet.thefleetdetail;
 
 import android.Manifest;
+import android.animation.Animator;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -26,12 +27,21 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.Filter;
 import android.widget.Filterable;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.NetworkError;
+import com.android.volley.NoConnectionError;
+import com.android.volley.ParseError;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.RetryPolicy;
+import com.android.volley.ServerError;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -40,16 +50,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import in.thefleet.thefleetdetail.model.Fleet;
+import in.thefleet.thefleetdetail.model.Header;
 import in.thefleet.thefleetdetail.online.isOnline;
 import in.thefleet.thefleetdetail.parsers.FleetJSONParser;
+import in.thefleet.thefleetdetail.parsers.HeaderJSONParser;
 import in.thefleet.thefleetdetail.phone.TelephonyInfo;
 
 public class MainActivity extends AppCompatActivity implements Filterable {
+
+    public static final String HeaderPREFERENCES = "HePrefs" ;
 
     public static final String PHOTOS_BASE_URL =
             "http://thefleet.in/Fleetmasterservice/";
     public static final String FLEETS_BASE_URL =
             "http://thefleet.in/Fleetmasterservice.svc/getFleets/";
+    public static final String HEADER_BASE_URL =
+            "http://thefleet.in/Fleetmasterservice.svc/getHeader/";
     public static final String FLEET_ID = "FLEET_ID";
     public static final String FLEET_REGNO = "FLEET_REGNO";
     public static final String FLEET_MAKE = "FLEET_MAKE";
@@ -60,16 +76,22 @@ public class MainActivity extends AppCompatActivity implements Filterable {
     public static final String PHONE_SIM = "PHONE_SIM";
 
     public String fleetUrl = null;
+    public String headerUrl = null;
+    private ImageView fleetView;
 
+    SharedPreferences headerPrefs;
+    SharedPreferences.Editor editor;
     private static final int MY_PERMISSIONS_REQUEST_READ_PHONE_STATE = 0;
     public static final String TAG = "MainActivity";
 
     ProgressBar pb;
     List<Fleet> fleetList;
+    List<Header> headerList;
     ListView list;
     FleetAdapter adapter;
     String imsiSIM;
     Toolbar toolbar;
+    String regNo;
 
     FleetAdapter fadapter;
     List<Fleet> filteredList;
@@ -82,12 +104,20 @@ public class MainActivity extends AppCompatActivity implements Filterable {
 
         pb = (ProgressBar) findViewById(R.id.progressBar1);
         pb.setVisibility(View.INVISIBLE);
+        fleetView = (ImageView)findViewById(R.id.imageFleet);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        headerPrefs = getSharedPreferences(MainActivity.HeaderPREFERENCES,
+                Context.MODE_PRIVATE);
+        if (headerPrefs.contains("hnamekey")) {
+            setTitle(headerPrefs.getString("hnamekey", null));
+
+        }
+
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setImageResource(R.drawable.ic_reload_white_48dp);
+
 
         //Refresh list on button click
         fab.setOnClickListener(new View.OnClickListener() {
@@ -96,8 +126,8 @@ public class MainActivity extends AppCompatActivity implements Filterable {
                 Snackbar.make(view, "Refreshing Data", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
 
-                 list.setAdapter(null);
-                 getPhoneSims();
+                list.setAdapter(null);
+                getPhoneSims();
             }
         });
 
@@ -106,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements Filterable {
     }
 
     private void getPhoneSims() {
-        Toast.makeText(MainActivity.this, "In getPhoneSims call", Toast.LENGTH_LONG).show();
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
                 != PackageManager.PERMISSION_GRANTED) {
             requestReadPhoneStatePermission();
@@ -120,7 +150,6 @@ public class MainActivity extends AppCompatActivity implements Filterable {
 
     private void requestReadPhoneStatePermission() {
         // READ_PHONE_STATE permission has not been granted yet. Request it directly.
-        Toast.makeText(MainActivity.this, "In doReadPhoneStatePermission Request it directly", Toast.LENGTH_LONG).show();
         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE},
                 MY_PERMISSIONS_REQUEST_READ_PHONE_STATE);
     }
@@ -128,13 +157,12 @@ public class MainActivity extends AppCompatActivity implements Filterable {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
-        Toast.makeText(MainActivity.this, "In onRequestPermissionResult", Toast.LENGTH_LONG).show();
+
         if (requestCode == MY_PERMISSIONS_REQUEST_READ_PHONE_STATE) {
             //If permision granted start calling URL and get data
             if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 doPermissionGrantedTasks();
             } else {
-                Log.d(TAG, "Permission not granted");
                 alertAlert(getString(R.string.permissions_not_granted_read_phone_state));
             }
         }
@@ -157,42 +185,103 @@ public class MainActivity extends AppCompatActivity implements Filterable {
     }
 
     private void doPermissionGrantedTasks() {
-        Toast.makeText(this, "In doPermission Granted Tasks", Toast.LENGTH_LONG).show();
+
 
         if (isOnline.isNetworkConnected(this)) {
 
             TelephonyInfo telephonyInfo = TelephonyInfo.getInstance(this);
             boolean isSIMReady = telephonyInfo.isSIM1Ready();
-            //if (isSIMReady) {
+
+            //Comment if for running in emulator
+            if (isSIMReady) {
                 SharedPreferences sv = PreferenceManager.getDefaultSharedPreferences(this);
                 String simValue = sv.getString("simValue", "1");
                 String fleetTypValue = sv.getString("fleetTypValue", "all");
-                Toast.makeText(this, "Sim value:" + simValue, Toast.LENGTH_LONG).show();
+
                 if (simValue.equals("1")) {
                     imsiSIM = telephonyInfo.getImsiSIM1();
                     fleetUrl = MainActivity.FLEETS_BASE_URL + imsiSIM + "/" + fleetTypValue + "/" + "all";
-                    Log.d(TAG, fleetUrl);
+                    headerUrl = MainActivity.HEADER_BASE_URL + imsiSIM;
                     requestData(fleetUrl);
+                    requestHeader(headerUrl);
                 } else if (simValue.equals("2")) {
                     imsiSIM = telephonyInfo.getImsiSIM2();
                     fleetUrl = MainActivity.FLEETS_BASE_URL + imsiSIM + "/" + fleetTypValue + "/" + "all";
-                    Log.d(TAG, fleetUrl);
+                    headerUrl = MainActivity.HEADER_BASE_URL + imsiSIM;
                     requestData(fleetUrl);
+                    requestHeader(headerUrl);
                 } else {
                     imsiSIM = "357327070825555";
                     fleetUrl = MainActivity.FLEETS_BASE_URL + "357327070825555" + "/" + fleetTypValue + "/" + "all";
-                    Log.d(TAG, fleetUrl);
+                    headerUrl = MainActivity.HEADER_BASE_URL + "357327070825555";
                     requestData(fleetUrl);
+                    requestHeader(headerUrl);
                 }
-           /* } else {
+                //Comment below else for running the app on simulator
+            } else {
                 Toast.makeText(this, "Sim is not ready or no access.Try with different sim", Toast.LENGTH_LONG).show();
-            }*/
+            }
         } else {
-            Toast.makeText(this, "Network isn't available", Toast.LENGTH_LONG).show();
+            alertAlert("Network isn't available");
         }
     }
+
+    private void requestHeader(String headerUrl) {
+        //Do it only once
+        if (!headerPrefs.contains("hnamekey")) {
+
+            StringRequest request3 = new StringRequest(headerUrl,
+
+                    new Response.Listener<String>() {
+
+                        @Override
+                        public void onResponse(String response) {
+                            headerList = HeaderJSONParser.parseFeed(response);
+
+                            for (Header header : headerList) {
+                                editor = headerPrefs.edit();
+                                editor.putString("hnamekey", header.getHeaderName());
+                                editor.commit();
+                            }
+
+                            getSupportActionBar().setTitle(headerPrefs.getString("hnamekey", null));
+                        }
+                    },
+
+                    new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+
+                          //  Toast.makeText(MainActivity.this, "Volley Header:" + error.getMessage(), Toast.LENGTH_LONG);
+                            if (error instanceof TimeoutError || error instanceof NoConnectionError) {
+                               Toast.makeText(getApplicationContext(), "Network time out error in request header",
+                                        Toast.LENGTH_LONG).show();
+                            } else if (error instanceof AuthFailureError) {
+                                Toast.makeText(getApplicationContext(), "Authentication failure in request header",
+                                        Toast.LENGTH_LONG).show();
+                            } else if (error instanceof ServerError) {
+                                Toast.makeText(getApplicationContext(), "Server error in request header",
+                                        Toast.LENGTH_LONG).show();
+                            } else if (error instanceof NetworkError) {
+                                Toast.makeText(getApplicationContext(), "Network error in request header",
+                                        Toast.LENGTH_LONG).show();
+                            } else if (error instanceof ParseError) {
+                                Toast.makeText(getApplicationContext(), "Parse error in request header",
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    });
+            RequestQueue queue3 = Volley.newRequestQueue(this);
+            int socketTimeout = 60000;// seconds - change to what you want
+            RetryPolicy policy = new DefaultRetryPolicy(socketTimeout, 2, 2);
+            request3.setRetryPolicy(policy);
+            queue3.add(request3);
+        }
+    }
+
     //Volley request
     private void requestData(String uri) {
+
         StringRequest request = new StringRequest(uri,
 
                 new Response.Listener<String>() {
@@ -200,8 +289,11 @@ public class MainActivity extends AppCompatActivity implements Filterable {
                     @Override
                     public void onResponse(String response) {
                         fleetList = FleetJSONParser.parseFeed(response);
+                        Log.d(TAG,fleetList.toString());
                         updateDisplay();
                         pb.setVisibility(View.INVISIBLE);
+                        fleetView.setVisibility(View.INVISIBLE);
+
                     }
                 },
 
@@ -209,13 +301,54 @@ public class MainActivity extends AppCompatActivity implements Filterable {
                     @Override
                     public void onErrorResponse(VolleyError error) {
 
-                        Toast.makeText(MainActivity.this,"Volley:"+error.getMessage(),Toast.LENGTH_LONG).show();
+                        if (error instanceof TimeoutError || error instanceof NoConnectionError) {
+                            alertAlert("Network time out error in request data");
+                        } else if (error instanceof AuthFailureError) {
+                            alertAlert("Authentication failure in request data");
+                        } else if (error instanceof ServerError) {
+                            alertAlert("Server error");
+                        } else if (error instanceof NetworkError) {
+                            alertAlert("Network error in request data");
+                        } else if (error instanceof ParseError) {
+                            alertAlert("Parse error in request data");
+                        }
+
                         pb.setVisibility(View.INVISIBLE);
+                        fleetView.setVisibility(View.INVISIBLE);
                     }
                 });
         RequestQueue queue = Volley.newRequestQueue(this);
+        int socketTimeout = 60000;// seconds - change to what you want
+        RetryPolicy policy = new DefaultRetryPolicy(socketTimeout, 2, 2);
+        request.setRetryPolicy(policy);
         queue.add(request);
         pb.setVisibility(View.VISIBLE);
+        fleetView.animate()
+                .scaleX(2)
+                .scaleY(2)
+                .setDuration(5000)
+                .setListener(new Animator.AnimatorListener() {
+                    @Override
+                    public void onAnimationStart(Animator animator) {
+
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animator animator) {
+                        fleetView.setVisibility(View.INVISIBLE);
+
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Animator animator) {
+
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animator animator) {
+
+                    }
+                });
     }
 
     @Override
@@ -253,7 +386,6 @@ public class MainActivity extends AppCompatActivity implements Filterable {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
 
         switch (item.getItemId()) {
             case R.id.action_settings:
@@ -271,15 +403,14 @@ public class MainActivity extends AppCompatActivity implements Filterable {
         adapter = new FleetAdapter(this, R.layout.item_fleet, fleetList);
         list = (ListView) findViewById(android.R.id.list);
         list.setAdapter(adapter);
-        if (!fleetList.isEmpty()) {
-            String header = fleetList.get(0).getHeader_Name();
-            toolbar.setTitle(header);
-        }
 
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Fleet fleet = fleetList.get(position);
+                regNo = fleet.getRegNo();
+                Globals g = Globals.getInstance();
+                g.setRegIdSelected(regNo);
                 callRecordActivity(position,fleet);
             }
         });
@@ -307,8 +438,9 @@ public class MainActivity extends AppCompatActivity implements Filterable {
         intent.putExtra(FLEET_MAKE, fleet.getMakeName());
         intent.putExtra(FLEET_MODEL, fleet.getModelName());
         intent.putExtra(FLEET_PHOTO, fleet.getPhoto());
-       // intent.putExtra(PHONE_SIM, imsiSIM);
+
         startActivity(intent);
+        overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out);
     }
 
     @Override
@@ -345,7 +477,6 @@ public class MainActivity extends AppCompatActivity implements Filterable {
 
         protected void publishResults(CharSequence constraint, FilterResults results) {
             filteredList = (ArrayList<Fleet>) results.values;
-           // adapter.notifyDataSetChanged();
             fadapter = new FleetAdapter(MainActivity.this, R.layout.item_fleet, filteredList);
             list = (ListView) findViewById(android.R.id.list);
             list.setAdapter(fadapter);
@@ -354,6 +485,9 @@ public class MainActivity extends AppCompatActivity implements Filterable {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     Fleet fleet = filteredList.get(position);
+                    regNo = fleet.getRegNo();
+                    Globals g = Globals.getInstance();
+                    g.setRegIdSelected(regNo);
                     callRecordActivity(position,fleet);
                 }
             });
@@ -366,7 +500,6 @@ public class MainActivity extends AppCompatActivity implements Filterable {
         EditText myFilter = (EditText) findViewById(R.id.action_search);
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(myFilter.getWindowToken(),0);
-
     }
 
 

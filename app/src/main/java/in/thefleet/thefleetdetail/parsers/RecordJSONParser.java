@@ -26,6 +26,10 @@ public class RecordJSONParser {
                         JSONObject obj = ar.getJSONObject(i);
                         Record record = new Record();
                         record.setInsh_End_Date(obj.getString("Insh_End_Date"));
+                        record.setIns_Company(obj.getString("Ins_Company"));
+                        record.setIns_Policy(obj.getString("Ins_Policy"));
+                        record.setIns_Premium(obj.getDouble("Ins_Premium"));
+                        record.setSum_Insured(obj.getDouble("Sum_Insured"));
                         record.setFitness_To_Date(obj.getString("Fitness_To_Date"));
                         record.setPermit_To_Date(obj.getString("Permit_To_Date"));
                         record.setTax_To_Date(obj.getString("Tax_To_Date"));

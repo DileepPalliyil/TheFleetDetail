@@ -96,4 +96,16 @@ public class RecordViewBL extends AppCompatActivity  {
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        this.finish();
+    }
+
     }

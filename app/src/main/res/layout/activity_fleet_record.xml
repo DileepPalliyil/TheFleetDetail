@@ -26,6 +26,8 @@
         android:layout_height="wrap_content"
         android:id="@+id/listView"
         android:layout_below="@id/fImage"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"
+        android:divider="@android:color/holo_orange_dark"
+        android:dividerHeight="1dp" />
 
 </RelativeLayout>

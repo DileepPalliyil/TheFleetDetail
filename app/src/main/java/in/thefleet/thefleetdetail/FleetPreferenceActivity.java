@@ -35,7 +35,7 @@ public class FleetPreferenceActivity extends PreferenceActivity {
                 CharSequence[] simValues = new CharSequence[]{ "1", "2","3" };
                 simListPref.setEntries(simNames);
                 simListPref.setEntryValues(simValues);
-                simListPref.setDefaultValue("3");
+                simListPref.setDefaultValue("1");
                 simListPref.setKey("simValue");
                 simListPref.setTitle("Select Registred Sim ");
                 simListPref.setSummary("Select theregistred  sim (Sim 1 or Sim 2 or Test Sim) in the system for data access.");
@@ -45,12 +45,15 @@ public class FleetPreferenceActivity extends PreferenceActivity {
                 CharSequence[] simValues = new CharSequence[]{ "1","3"};
                 simListPref.setEntries(simNames);
                 simListPref.setEntryValues(simValues);
-                simListPref.setDefaultValue("3");
+                simListPref.setDefaultValue("1");
                 simListPref.setKey("simValue");
                 simListPref.setTitle("Select Registred Sim ");
-                simListPref.setSummary("Select theregistred  sim (Sim 1 or Test Sim) in the system for data access.");
+                simListPref.setSummary("Select the registred  sim (Sim 1 or Test Sim) in the system for data access.");
                 simListPref.setPersistent(true);
             }
+
+            // Add the ListPref to the Pref category
+            targetCategory.addPreference(simListPref);
 
             // Add the ListPref to the Pref category
             targetCategory.addPreference(simListPref);
